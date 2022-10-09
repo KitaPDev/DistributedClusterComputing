@@ -59,41 +59,15 @@ int main(int argc, char* argv[]) {
             MPI_Recv(&bufCount, 1, MPI_INT, myRank+1, tag, MPI_COMM_WORLD, &status);
             count += bufCount;
 
-            if (myRank % 64 == 0) {
-                for (int i = 1; i < 6; i++) {
-                    MPI_Recv(&bufCount, 1, MPI_INT, myRank+pow(2, i), tag, MPI_COMM_WORLD, &status);
-                    count += bufCount;
+            for (int i = (int)pow(2, log2(size)); i > 0; i = i/2) {
+                if (myRank % i == 0) {
+                    for (int j = 1; j < log2(i); j++) {
+                        MPI_Recv(&bufCount, 1, MPI_INT, myRank+pow(2, j), tag, MPI_COMM_WORLD, &status);
+                        count += bufCount;
+                    }
+                    MPI_Send(&count, 1, MPI_INT, myRank-i, tag, MPI_COMM_WORLD);
+                    i = 0;
                 }
-                MPI_Send(&count, 1, MPI_INT, myRank-64, tag, MPI_COMM_WORLD);
-            
-            } else if (myRank % 32 == 0) {
-                for (int i = 1; i < 5; i++) {
-                    MPI_Recv(&bufCount, 1, MPI_INT, myRank+pow(2, i), tag, MPI_COMM_WORLD, &status);
-                    count += bufCount;
-                }
-                MPI_Send(&count, 1, MPI_INT, myRank-32, tag, MPI_COMM_WORLD);
-
-            } else if (myRank % 16 == 0) {
-                for (int i = 1; i < 4; i++) {
-                    MPI_Recv(&bufCount, 1, MPI_INT, myRank+pow(2, i), tag, MPI_COMM_WORLD, &status);
-                    count += bufCount;
-                }
-                MPI_Send(&count, 1, MPI_INT, myRank-16, tag, MPI_COMM_WORLD);
-
-            } else if (myRank % 8 == 0) {
-                for (int i = 1; i < 3; i++) {
-                    MPI_Recv(&bufCount, 1, MPI_INT, myRank+pow(2, i), tag, MPI_COMM_WORLD, &status);
-                    count += bufCount;
-                }
-                MPI_Send(&count, 1, MPI_INT, myRank-8, tag, MPI_COMM_WORLD);
-            
-            } else if (myRank % 4 == 0) {
-                MPI_Recv(&bufCount, 1, MPI_INT, myRank+2, tag, MPI_COMM_WORLD, &status);
-                count += bufCount;
-                MPI_Send(&count, 1, MPI_INT, myRank-4, tag, MPI_COMM_WORLD);
-
-            } else if (myRank % 2 == 0) {
-                MPI_Send(&count, 1, MPI_INT, myRank-2, tag, MPI_COMM_WORLD);
             }
         }
 
