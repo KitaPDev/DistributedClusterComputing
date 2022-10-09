@@ -50,7 +50,7 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        // If odd send to previous process
+        // Eliminate odd processes
         if (myRank % 2 != 0) {
             MPI_Send(&count, 1, MPI_INT, myRank-1, tag, MPI_COMM_WORLD);
 
@@ -59,44 +59,45 @@ int main(int argc, char* argv[]) {
             MPI_Recv(&bufCount, 1, MPI_INT, myRank+1, tag, MPI_COMM_WORLD, &status);
             count += bufCount;
 
-            // Even processes not power of 2
-            if ((myRank & (myRank - 1)) != 0) {
-                // Power of 2 before current rank
-                int prevRankPow2 = (int)pow(2, (int)log2(myRank));
-                int diff = (myRank - prevRankPow2);
-
-                for (int i = 1; i < (int)log2(diff); i++) {
-                    if ((myRank+(2*i) - prevRankPow2) >= prevRankPow2) {
-                        // Send to previous even process
-                        printf("Process %d ---> %d\n", myRank, myRank-2);
-                        MPI_Send(&count, 1, MPI_INT, myRank-2, tag, MPI_COMM_WORLD);
-                    
-                    } else {
-                        printf("Process %d <--- %d\n", myRank, myRank+(2*i));
-                        MPI_Recv(&bufCount, 1, MPI_INT, myRank+(2*i), tag, MPI_COMM_WORLD, &status);
-                        count += bufCount;
-                    }
-                }
-
-                if ((diff & (diff - 1)) == 0) {
-                    MPI_Send(&count, 1, MPI_INT, prevRankPow2, tag, MPI_COMM_WORLD);
-                    printf("Process %d --> process %d\n", myRank, prevRankPow2);
-                }
-
-            } else {
-                // Intermediate processes
-                // Reduction before ---> process 0
-                for (int i = 1; i < log2(myRank); i++) {
-                    printf("Process %d <--- process %d\n", myRank, myRank+(2*i));
-                    MPI_Recv(&bufCount, 1, MPI_INT, myRank+(2*i), tag, MPI_COMM_WORLD, &status);
+            if (myRank % 64 == 0) {
+                for (int i = 1; i < 6; i++) {
+                    MPI_Recv(&bufCount, 1, MPI_INT, myRank+pow(2, i), tag, MPI_COMM_WORLD, &status);
                     count += bufCount;
                 }
+                MPI_Send(&count, 1, MPI_INT, myRank-64, tag, MPI_COMM_WORLD);
+            
+            } else if (myRank % 32 == 0) {
+                for (int i = 1; i < 5; i++) {
+                    MPI_Recv(&bufCount, 1, MPI_INT, myRank+pow(2, i), tag, MPI_COMM_WORLD, &status);
+                    count += bufCount;
+                }
+                MPI_Send(&count, 1, MPI_INT, myRank-32, tag, MPI_COMM_WORLD);
 
-                MPI_Send(&count, 1, MPI_INT, 0, tag, MPI_COMM_WORLD);
+            } else if (myRank % 16 == 0) {
+                for (int i = 1; i < 4; i++) {
+                    MPI_Recv(&bufCount, 1, MPI_INT, myRank+pow(2, i), tag, MPI_COMM_WORLD, &status);
+                    count += bufCount;
+                }
+                MPI_Send(&count, 1, MPI_INT, myRank-16, tag, MPI_COMM_WORLD);
+
+            } else if (myRank % 8 == 0) {
+                for (int i = 1; i < 3; i++) {
+                    MPI_Recv(&bufCount, 1, MPI_INT, myRank+pow(2, i), tag, MPI_COMM_WORLD, &status);
+                    count += bufCount;
+                }
+                MPI_Send(&count, 1, MPI_INT, myRank-8, tag, MPI_COMM_WORLD);
+            
+            } else if (myRank % 4 == 0) {
+                MPI_Recv(&bufCount, 1, MPI_INT, myRank+2, tag, MPI_COMM_WORLD, &status);
+                count += bufCount;
+                MPI_Send(&count, 1, MPI_INT, myRank-4, tag, MPI_COMM_WORLD);
+
+            } else if (myRank % 2 == 0) {
+                MPI_Send(&count, 1, MPI_INT, myRank-2, tag, MPI_COMM_WORLD);
             }
         }
 
-    } else {
+    } else { // Process 0
         for(int i = 0; i < numSteps; i++) {
             MPI_Recv(&partialCount[i-1], 1, MPI_INT, (int)pow(2, i), tag, MPI_COMM_WORLD, &status);
             count += partialCount[i-1];
